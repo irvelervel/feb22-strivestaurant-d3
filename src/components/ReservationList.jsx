@@ -10,7 +10,8 @@
 // 4) because we just set the state, render() fires again (because render() fires every time the state is set or every time a prop changes)
 
 import { Component } from 'react'
-import { Row, Col, ListGroup } from 'react-bootstrap'
+import { Row, Col, ListGroup, Spinner, Alert } from 'react-bootstrap'
+import { parseISO, format } from 'date-fns'
 
 // a fetch() is potentially an expensive operation: we want to perform it the least
 // amount of times possible, and in the less intrusive way possible: after presenting the
@@ -22,6 +23,8 @@ class ReservationList extends Component {
   state = {
     reservations: [],
     // singleObject: null // -> this can maybe become a real object, so let's put an explicit falsy value to begin with
+    isLoading: true,
+    isError: false,
   }
 
   componentDidMount = () => {
@@ -47,14 +50,23 @@ class ReservationList extends Component {
         // every time you grab some data from the internet, you're going to put it in the STATE of the component
         this.setState({
           reservations: data,
+          isLoading: false,
         })
         // every time you set the state, render() fires AGAIN.
       } else {
         // our request got a problem
-        alert('something went wrong fetching the reservations :(')
+        // alert('something went wrong fetching the reservations :(')
+        this.setState({
+          isLoading: false,
+          isError: true,
+        })
       }
     } catch (error) {
       console.log('error!', error)
+      this.setState({
+        isLoading: false,
+        isError: true,
+      })
     }
   }
 
@@ -66,11 +78,22 @@ class ReservationList extends Component {
       <Row className="justify-content-center my-4">
         <Col md={6} className="text-center">
           <h2>Booked Tables</h2>
+          {this.state.isLoading && ( // SHORT-CIRCUIT
+            <Spinner animation="border" variant="info" /> // <-- this will always be true
+          )}
+          {this.state.isError && (
+            <Alert variant="danger">😭 An error happened, we're sorry!</Alert>
+          )}
           <ListGroup>
             {/* reservations initially is [] */}
             {/* after setting the state, reservations is NOT [] anymore! */}
+
+            {/* parseISO takes a string and returns you a Date (a moment in time) */}
             {this.state.reservations.map((r) => (
-              <ListGroup.Item key={r._id}>{r.name}</ListGroup.Item>
+              <ListGroup.Item key={r._id}>
+                {r.name} -{' '}
+                {format(parseISO(r.dateTime), 'MMMM do yyyy | HH:mm')}
+              </ListGroup.Item>
             ))}
           </ListGroup>
         </Col>
